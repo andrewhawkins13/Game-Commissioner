@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { Turbo } from "@hotwired/turbo-rails"
 
 // Connects to data-controller="poll"
 export default class extends Controller {
@@ -55,14 +56,19 @@ export default class extends Controller {
         if (response.ok) {
           const html = await response.text()
           // Turbo automatically processes the stream response
-          window.Turbo.renderStreamMessage(html)
+          if (Turbo.renderStreamMessage) {
+            await Turbo.renderStreamMessage(html)
+          } else {
+            // Fallback for older Turbo versions or if method is missing
+            document.body.insertAdjacentHTML('beforeend', html)
+          }
         }
       } catch (error) {
         console.error('Polling refresh failed:', error)
       }
     } else {
       // Fallback to old behavior if no URL is specified
-      window.Turbo.visit(window.location.href, { action: 'replace' })
+      Turbo.visit(window.location.href, { action: 'replace' })
     }
   }
 }

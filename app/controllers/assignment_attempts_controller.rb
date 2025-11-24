@@ -17,7 +17,7 @@ class AssignmentAttemptsController < ApplicationController
   end
 
   def show
-    @assignments = @attempt.assignments.includes(:game, :official, :rule_violations).order('games.game_date')
+    @assignments = @attempt.assignments.joins(:game).includes(:game, :official, :rule_violations).order('games.game_date')
     @attempt.assignment_evaluation # Eager load evaluation if it exists
   end
 
