@@ -1,0 +1,78 @@
+<div class="max-w-4xl mx-auto">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-gray-900"><%= @official.name %></h1>
+    <div class="flex space-x-2">
+      <%= link_to "Edit", edit_official_path(@official), class: "bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-md" %>
+      <%= link_to "Back", officials_path, class: "bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-4 py-2 rounded-md" %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4">Contact Information</h2>
+      <div class="space-y-3">
+        <p><span class="font-medium text-gray-700">Email:</span> <%= @official.email %></p>
+        <% if @official.phone %>
+          <p><span class="font-medium text-gray-700">Phone:</span> <%= @official.phone %></p>
+        <% end %>
+        <% if @official.home_address %>
+          <p><span class="font-medium text-gray-700">Address:</span> <%= @official.home_address %></p>
+        <% end %>
+        <% if @official.max_distance %>
+          <p><span class="font-medium text-gray-700">Max Travel Distance:</span> <%= @official.max_distance %> miles</p>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4">Available Roles</h2>
+      <div class="flex flex-wrap gap-2">
+        <% Assignment.roles.keys.each do |role| %>
+          <% has_role = @official_roles.any? { |r| r.role == role } %>
+          <span class="<%= has_role ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-500' %> px-3 py-1 rounded-md text-sm font-medium">
+            <%= role.upcase %>
+          </span>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200 mt-6">
+    <h2 class="text-xl font-semibold text-gray-900 mb-4">Assignment Rules</h2>
+    <% if @rules.any? %>
+      <ul class="space-y-2">
+        <% @rules.each do |rule| %>
+          <li class="flex justify-between items-start p-3 border border-gray-200 rounded">
+            <span class="text-gray-700"><%= rule.rule_text %></span>
+            <span class="<%= rule.active? ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500' %> px-2 py-1 rounded text-xs ml-4">
+              <%= rule.active? ? 'Active' : 'Inactive' %>
+            </span>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="text-gray-500">No rules set for this official.</p>
+    <% end %>
+  </div>
+
+  <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200 mt-6">
+    <h2 class="text-xl font-semibold text-gray-900 mb-4">Recent Assignments</h2>
+    <% if @official.assignments.any? %>
+      <div class="space-y-2">
+        <% @official.assignments.includes(:game).limit(10).each do |assignment| %>
+          <div class="flex justify-between items-center p-3 border border-gray-200 rounded">
+            <div>
+              <p class="font-medium text-gray-900"><%= assignment.game.name %></p>
+              <p class="text-sm text-gray-600"><%= time_tag assignment.game.game_date, assignment.game.game_date.strftime("%B %d, %Y at %I:%M %p"), data: { controller: "local-time" } %></p>
+            </div>
+            <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded text-sm font-medium">
+              <%= assignment.role.upcase %>
+            </span>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="text-gray-500">No assignments yet.</p>
+    <% end %>
+  </div>
+</div>

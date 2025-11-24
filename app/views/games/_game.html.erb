@@ -1,0 +1,46 @@
+<%= turbo_frame_tag "game_#{game.id}" do %>
+  <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200 <%= 'needs-assignment' unless game.full? %>">
+    <div class="mb-4">
+      <h3 class="text-xl font-semibold text-gray-900"><%= game.name %></h3>
+      <p class="text-gray-600 mt-1">
+        <%= time_tag game.game_date, game.game_date.strftime("%A, %B %d, %Y at %I:%M %p"), data: { controller: "local-time" } %>
+      </p>
+      <p class="text-gray-500 text-sm mt-1">
+        <%= game.location %> - <%= game.address %>
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <% Assignment.roles.keys.each do |role| %>
+        <div class="border border-gray-200 rounded-md p-3">
+          <div class="text-sm font-medium text-gray-700 mb-2 uppercase"><%= role.upcase %></div>
+          <% assignment = game.assignments.find { |a| a.role == role } %>
+          <% if assignment %>
+            <div class="flex items-center justify-between bg-blue-50 px-3 py-2 rounded">
+              <span class="text-sm text-gray-900"><%= assignment.official.name %></span>
+              <%= button_to "×", game_assignment_path(game, assignment), method: :delete, class: "text-red-600 hover:text-red-700 font-bold text-lg", data: { turbo_frame: "game_#{game.id}" } %>
+            </div>
+          <% else %>
+            <%= form_with model: [game, game.assignments.build], data: { turbo_frame: "game_#{game.id}" }, class: "space-y-2" do |f| %>
+              <%= f.hidden_field :role, value: role %>
+              <%= f.select :official_id,
+                  options_for_select([["Select Official", ""]] + Official.all.map { |o| [o.name, o.id] }),
+                  {},
+                  class: "w-full text-sm border-gray-300 rounded-md",
+                  onchange: "this.form.requestSubmit()" %>
+            <% end %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <% unless game.full? %>
+      <div class="mt-4 pt-4 border-t border-gray-200">
+        <p class="text-sm text-amber-600">
+          <span class="font-medium">Open positions:</span>
+          <%= game.open_positions.map { |r| r.upcase }.join(", ") %>
+        </p>
+      </div>
+    <% end %>
+  </div>
+<% end %>

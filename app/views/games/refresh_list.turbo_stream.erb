@@ -1,0 +1,3 @@
+<%= turbo_stream.replace "games-list" do %>
+  <%= render partial: "games_list", locals: { games: @games } %>
+<% end %>

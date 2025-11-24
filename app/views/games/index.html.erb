@@ -1,0 +1,12 @@
+<div class="w-full" data-controller="poll" data-poll-interval-value="5000" data-poll-selector-value=".needs-assignment" data-poll-url-value="<%= refresh_list_games_path %>">
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-900">Upcoming Games</h1>
+  </div>
+
+  <!-- Model Selector for AI Assignments -->
+  <%= render "model_selector" %>
+
+  <div id="games-list">
+    <%= render partial: "games_list", locals: { games: @games } %>
+  </div>
+</div>

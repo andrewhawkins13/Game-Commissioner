@@ -1,0 +1,134 @@
+require "rails_helper"
+
+RSpec.describe <%= job_class_name %>, type: :job do
+  describe "#perform" do
+    <% parameters.each do |param| %>
+    let(:<%= param[:name] %>) do
+      <% if param[:type] == :double %>
+      double("<%= param[:class_name] %>",
+        <%= param[:attributes].map { |k, v| "#{k}: #{v.inspect}" }.join(",\n        ") %>
+      )
+      <% elsif param[:type] == :model %>
+      <%= param[:class_name] %>.create!(<%= param[:attributes_hash] %>)
+      <% else %>
+      <%= param[:default_value] %>
+      <% end %>
+    end
+    <% end %>
+
+    <% if has_service_delegation %>
+    let(:<%= service_name %>) { instance_double(<%= service_class %>) }
+
+    before do
+      allow(<%= service_class %>).to receive(:new).and_return(<%= service_name %>)
+      allow(<%= service_name %>).to receive(:<%= service_method %>)
+    end
+    <% end %>
+
+    <% if has_model_updates %>
+    before do
+      <% model_stubs.each do |stub| %>
+      <%= stub %>
+      <% end %>
+    end
+    <% end %>
+
+    context "with valid parameters" do
+      it "executes successfully" do
+        expect { described_class.perform_now(<%= parameters.map { |p| p[:name] }.join(", ") %>) }.not_to raise_error
+      end
+
+      <% if has_service_delegation %>
+      it "calls the <%= service_name %> with correct parameters" do
+        expect(<%= service_name %>).to receive(:<%= service_method %>)<% if service_params %>.with(<%= service_params %>)<% end %>
+        described_class.perform_now(<%= parameters.map { |p| p[:name] }.join(", ") %>)
+      end
+      <% end %>
+
+      <% if has_model_updates %>
+      it "updates the <%= updated_model %> status" do
+        described_class.perform_now(<%= parameters.map { |p| p[:name] }.join(", ") %>)
+        <%= updated_model %>.reload
+        <%= update_expectations.join("\n        ") %>
+      end
+      <% end %>
+
+      <% if broadcasts_updates %>
+      it "broadcasts updates via Turbo Stream" do
+        expect {
+          described_class.perform_now(<%= parameters.map { |p| p[:name] }.join(", ") %>)
+        }.to have_broadcasted_to(<%= broadcast_target %>)
+      end
+      <% end %>
+
+      <% additional_expectations.each do |expectation| %>
+      it "<%= expectation[:description] %>" do
+        <%= expectation[:test_code] %>
+      end
+      <% end %>
+    end
+
+    <% if has_error_handling %>
+    context "when service raises an error" do
+      let(:error_message) { "<%= error_message %>" }
+
+      before do
+        allow(<%= service_name %>).to receive(:<%= service_method %>).and_raise(StandardError.new(error_message))
+      end
+
+      it "handles the error appropriately" do
+        <%= error_handling_test %>
+      end
+
+      <% if logs_errors %>
+      it "logs the error" do
+        expect(Rails.logger).to receive(:error).with(/#{error_message}/)
+        <%= error_handling_call %>
+      end
+      <% end %>
+
+      <% if updates_model_on_error %>
+      it "updates <%= updated_model %> status to failed" do
+        <%= error_handling_call %>
+        <%= updated_model %>.reload
+        expect(<%= updated_model %>.status).to eq("failed")
+      end
+      <% end %>
+    end
+    <% end %>
+
+    <% if has_edge_cases %>
+    context "with edge cases" do
+      <% edge_cases.each do |edge_case| %>
+      context "<%= edge_case[:scenario] %>" do
+        <% if edge_case[:setup] %>
+        before do
+          <%= edge_case[:setup] %>
+        end
+        <% end %>
+
+        it "<%= edge_case[:expectation] %>" do
+          <%= edge_case[:test_code] %>
+        end
+      end
+      <% end %>
+    end
+    <% end %>
+
+    <% if has_retry_logic %>
+    context "with retry logic" do
+      it "retries on <%= retry_exception %>" do
+        expect(described_class).to receive(:retry_on).with(<%= retry_exception %>)
+        # Test retry behavior
+      end
+    end
+    <% end %>
+
+    <% if has_queue_configuration %>
+    it "is queued on the <%= queue_name %> queue" do
+      job = described_class.new
+      expect(job.queue_name).to eq("<%= queue_name %>")
+    end
+    <% end %>
+  end
+end

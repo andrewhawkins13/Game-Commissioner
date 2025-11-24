@@ -1,0 +1,273 @@
+<div class="w-full">
+  <!-- Header -->
+  <div class="mb-6">
+    <%= link_to "← Back to All Attempts", assignment_attempts_path, class: "text-blue-600 hover:text-blue-700 mb-4 inline-block" %>
+
+    <div class="flex items-center justify-between mb-2">
+      <h1 class="text-3xl font-bold text-gray-900"><%= @attempt.ollama_model %></h1>
+
+      <div class="flex items-center gap-3">
+        <!-- Status Badge -->
+        <%= assignment_attempt_status_badge(@attempt) %>
+
+        <!-- Evaluation Badge -->
+        <%= assignment_attempt_evaluation_badge(@attempt) %>
+      </div>
+    </div>
+
+    <p class="text-gray-600">
+      Started <%= time_tag @attempt.started_at, @attempt.started_at&.strftime("%B %d, %Y at %I:%M %p"), data: { controller: "local-time" } %>
+      <% if @attempt.completed_at %>
+        · Completed in <%= @attempt.duration_seconds %>s
+      <% end %>
+    </p>
+  </div>
+
+  <!-- Metrics Summary -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div class="text-sm text-gray-500 mb-1">Fill Rate</div>
+      <div class="text-2xl font-bold <%= (@attempt.success_rate || 0) >= 70 ? 'text-green-600' : 'text-amber-600' %>">
+        <%= number_to_percentage(@attempt.success_rate || 0, precision: 1) %>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div class="text-sm text-gray-500 mb-1">Positions Filled</div>
+      <div class="text-2xl font-bold text-gray-900">
+        <%= @attempt.assignments_made %>/<%= @attempt.total_positions %>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div class="text-sm text-gray-500 mb-1">Total Tokens</div>
+      <div class="text-2xl font-bold text-gray-900">
+        <%= number_to_human(@attempt.total_tokens || 0) %>
+      </div>
+      <div class="text-xs text-gray-500 mt-1">
+        <span class="text-blue-600"><%= number_to_human(@attempt.prompt_tokens_total || 0) %></span> prompt ·
+        <span class="text-green-600"><%= number_to_human(@attempt.completion_tokens_total || 0) %></span> completion
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div class="text-sm text-gray-500 mb-1">Duration</div>
+      <div class="text-2xl font-bold text-gray-900">
+        <%= @attempt.duration_seconds || 0 %>s
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Analysis Sections -->
+  <div class="mb-6">
+    <!-- Evaluation Results (if available) -->
+    <% if @attempt.assignment_evaluation.present? %>
+      <% evaluation = @attempt.assignment_evaluation %>
+      <details class="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 group" open>
+        <summary class="px-6 py-4 cursor-pointer hover:bg-gray-50 transition-colors list-none [&::-webkit-details-marker]:hidden">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xl font-semibold text-gray-900 inline">Assignment Validation</h2>
+            </div>
+            <span class="text-gray-400 transition-transform group-open:rotate-180">▼</span>
+          </div>
+        </summary>
+
+        <div class="px-6 py-4 border-t border-gray-200">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <div class="text-sm text-gray-500">Distance Violations</div>
+              <div class="text-3xl font-bold <%= evaluation.distance_violations_count > 0 ? 'text-amber-600' : 'text-green-600' %>">
+                <%= evaluation.distance_violations_count %>
+              </div>
+              <div class="text-xs text-gray-500 mt-1">Travel limit exceeded</div>
+            </div>
+
+            <div>
+              <div class="text-sm text-gray-500">Critical Violations</div>
+              <div class="text-3xl font-bold <%= evaluation.critical_violations_count > 0 ? 'text-red-600' : 'text-green-600' %>">
+                <%= evaluation.critical_violations_count %>
+              </div>
+              <div class="text-xs text-gray-500 mt-1">Severity: Critical</div>
+            </div>
+
+            <div>
+              <div class="text-sm text-gray-500">Total Violations</div>
+              <div class="text-3xl font-bold <%= evaluation.total_violations_count > 0 ? 'text-amber-600' : 'text-green-600' %>">
+                <%= evaluation.total_violations_count %>
+              </div>
+              <div class="text-xs text-gray-500 mt-1">All severities</div>
+            </div>
+          </div>
+
+          <!-- Violations Detail -->
+          <% if evaluation.rule_violations.any? %>
+            <div class="mt-4">
+              <details class="bg-amber-50 border border-amber-200 rounded-lg group">
+                <summary class="px-4 py-3 cursor-pointer hover:bg-amber-100 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                  <span class="font-medium text-amber-900">
+                    <%= evaluation.rule_violations.count %> Violation(s) Detected - Click to view details
+                  </span>
+                </summary>
+                <div class="px-4 py-3 border-t border-amber-200 space-y-3">
+                  <% evaluation.rule_violations.by_severity.each do |violation| %>
+                    <div class="bg-white rounded-lg p-3 border <%= violation.severity == 'critical' ? 'border-red-300' : violation.severity == 'major' ? 'border-orange-300' : 'border-yellow-300' %>">
+                      <div class="flex items-start justify-between mb-2">
+                        <div>
+                          <span class="inline-block px-2 py-1 rounded text-xs font-bold <%= violation.severity == 'critical' ? 'bg-red-100 text-red-800' : violation.severity == 'major' ? 'bg-orange-100 text-orange-800' : 'bg-yellow-100 text-yellow-800' %>">
+                            <%= violation.severity.upcase %>
+                          </span>
+                          <span class="ml-2 text-xs font-medium text-gray-700"><%= violation.violation_type.titleize %></span>
+                        </div>
+                      </div>
+                      <p class="text-sm text-gray-800"><%= violation.description %></p>
+                      <div class="mt-2 text-xs text-gray-600">
+                        <% if violation.assignment %>
+                          Game: <%= violation.assignment.game.name %> | Official: <%= violation.official.name %> (<%= violation.assignment.role.upcase %>)
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </details>
+            </div>
+          <% end %>
+        </div>
+      </details>
+    <% end %>
+
+    <!-- Prompt Sent to AI -->
+    <% if @attempt.prompt.present? %>
+      <details class="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 group">
+        <summary class="px-6 py-4 cursor-pointer hover:bg-gray-50 transition-colors list-none [&::-webkit-details-marker]:hidden">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900 inline">Prompt Sent to AI</h2>
+              <span class="text-sm text-gray-500 ml-2">
+                (<%= number_to_human(@attempt.prompt.length) %> characters ·
+                <span class="text-blue-600"><%= number_to_human(@attempt.prompt_tokens_total) %> tokens</span>)
+              </span>
+            </div>
+            <span class="text-gray-400 transition-transform group-open:rotate-180">▼</span>
+          </div>
+        </summary>
+        <div class="px-6 py-4 border-t border-gray-200">
+          <pre class="bg-gray-50 p-4 rounded-lg overflow-x-auto text-xs font-mono text-gray-800 whitespace-pre-wrap"><%= @attempt.prompt %></pre>
+        </div>
+      </details>
+    <% end %>
+
+    <!-- Full AI Response -->
+    <% if @attempt.ai_response.present? %>
+      <details class="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 group">
+        <summary class="px-6 py-4 cursor-pointer hover:bg-gray-50 transition-colors list-none [&::-webkit-details-marker]:hidden">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900 inline">Full AI Response</h2>
+              <span class="text-sm text-gray-500 ml-2">
+                (<%= number_to_human(@attempt.ai_response.length) %> characters ·
+                <span class="text-green-600"><%= number_to_human(@attempt.completion_tokens_total) %> tokens</span>)
+              </span>
+            </div>
+            <span class="text-gray-400 transition-transform group-open:rotate-180">▼</span>
+          </div>
+        </summary>
+        <div class="px-6 py-4 border-t border-gray-200">
+          <pre class="bg-gray-50 p-4 rounded-lg overflow-x-auto text-xs font-mono text-gray-800 whitespace-pre-wrap"><%= @attempt.ai_response %></pre>
+        </div>
+      </details>
+    <% end %>
+  </div>
+
+  <!-- Assignments List -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h2 class="text-xl font-semibold text-gray-900">Assignment Details</h2>
+      <p class="text-sm text-gray-600 mt-1"><%= @assignments.count %> positions processed</p>
+    </div>
+
+    <% if @assignments.any? %>
+      <div class="divide-y divide-gray-200">
+        <% @assignments.group_by(&:game).each do |game, game_assignments| %>
+          <div class="px-6 py-6 hover:bg-gray-50 transition-colors">
+            <!-- Game Header -->
+            <div class="mb-2">
+              <div class="flex items-center justify-between mb-1">
+                <h3 class="text-lg font-bold text-gray-900"><%= game.name %></h3>
+              </div>
+              <div class="text-sm text-gray-600">
+                <%= time_tag game.game_date, game.game_date.strftime("%B %d, %Y at %I:%M %p"), data: { controller: "local-time" } %>
+                · <%= game.location %>
+              </div>
+            </div>
+
+            <!-- Assignments List -->
+            <div class="space-y-2">
+              <% game_assignments.each do |assignment| %>
+                <div class="bg-white border border-gray-200 rounded-lg p-4">
+                  <div class="flex items-start justify-between mb-2">
+                    <div class="flex items-center gap-3">
+                      <span class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800 font-medium">
+                        <%= assignment.role.upcase %>
+                      </span>
+                      
+                      <% if assignment.official.present? %>
+                        <span class="font-medium text-gray-900"><%= assignment.official.name %></span>
+                        <% if assignment.score.present? %>
+                          <span class="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">
+                            Score: <%= assignment.score %>/100
+                          </span>
+                        <% end %>
+                      <% else %>
+                        <span class="text-sm text-amber-600 font-medium">No official assigned</span>
+                      <% end %>
+                    </div>
+
+                    <!-- Success/Failure Badge -->
+                    <% if assignment.success %>
+                      <span class="text-xs px-2 py-1 rounded bg-green-100 text-green-800">✓ Success</span>
+                    <% else %>
+                      <span class="text-xs px-2 py-1 rounded bg-red-100 text-red-800">✗ Failed</span>
+                    <% end %>
+                  </div>
+
+                  <!-- AI Reasoning -->
+                  <% if assignment.reasoning.present? %>
+                    <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-3">
+                      <div class="text-xs font-medium text-blue-900 mb-1">AI Reasoning</div>
+                      <p class="text-sm text-blue-800"><%= assignment.reasoning %></p>
+                    </div>
+                  <% end %>
+
+                  <!-- Rule Violations -->
+                  <% if assignment.rule_violations.any? %>
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-2">
+                      <div class="text-xs font-medium text-red-900 mb-2">
+                        ⚠️ <%= assignment.rule_violations.count %> Rule Violation(s)
+                      </div>
+                      <div class="space-y-2">
+                        <% assignment.rule_violations.each do |violation| %>
+                          <div class="text-sm">
+                            <span class="<%= violation.severity == 'critical' ? 'text-red-700' : violation.severity == 'major' ? 'text-orange-700' : 'text-yellow-700' %> font-medium">
+                              [<%= violation.severity.upcase %>]
+                            </span>
+                            <span class="text-red-800"><%= violation.description %></span>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="px-6 py-12 text-center text-gray-500">
+        No assignments in this attempt
+      </div>
+    <% end %>
+  </div>
+
+</div>

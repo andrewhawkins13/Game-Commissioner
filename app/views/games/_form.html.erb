@@ -1,0 +1,53 @@
+<%= form_with model: game, class: "space-y-6" do |f| %>
+  <% if game.errors.any? %>
+    <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md">
+      <h3 class="font-semibold mb-2"><%= pluralize(game.errors.count, "error") %> prohibited this game from being saved:</h3>
+      <ul class="list-disc list-inside">
+        <% game.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :name, class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.text_field :name, class: "w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" %>
+  </div>
+
+  <div>
+    <%= f.label :game_date, "Date & Time", class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.datetime_local_field :game_date, class: "w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" %>
+  </div>
+
+  <div>
+    <%= f.label :location, "Venue Name", class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.text_field :location, class: "w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" %>
+  </div>
+
+  <div>
+    <%= f.label :address, class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.text_field :address, placeholder: "123 Main St, City, State ZIP", class: "w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" %>
+  </div>
+
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <%= f.label :latitude, class: "block text-sm font-medium text-gray-700 mb-1" %>
+      <%= f.number_field :latitude, step: "any", class: "w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" %>
+    </div>
+    <div>
+      <%= f.label :longitude, class: "block text-sm font-medium text-gray-700 mb-1" %>
+      <%= f.number_field :longitude, step: "any", class: "w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" %>
+    </div>
+  </div>
+
+  <div>
+    <%= f.label :status, class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.select :status, Game.statuses.keys.map { |s| [s.titleize, s] }, {}, class: "w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" %>
+  </div>
+
+  <div class="flex space-x-4">
+    <%= f.submit class: "bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-md cursor-pointer" %>
+    <%= link_to "Cancel", games_path, class: "bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-6 py-2 rounded-md" %>
+  </div>
+<% end %>

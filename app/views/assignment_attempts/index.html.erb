@@ -1,0 +1,11 @@
+<div class="w-full" data-controller="poll" data-poll-interval-value="5000" data-poll-selector-value=".js-poll-target" data-poll-url-value="<%= refresh_list_assignment_attempts_path %>">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Assignment Attempts</h1>
+    <p class="text-gray-600">Compare different LLM models and their scheduling performance</p>
+  </div>
+
+  <!-- Individual Attempts List -->
+  <div id="attempts-list" class="bg-white rounded-lg shadow-sm border border-gray-200">
+    <%= render partial: "attempts_list", locals: { attempts: @attempts } %>
+  </div>
+</div>

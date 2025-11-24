@@ -1,0 +1,3 @@
+<%= turbo_stream.update "attempts-list" do %>
+  <%= render partial: "attempts_list", locals: { attempts: @attempts } %>
+<% end %>

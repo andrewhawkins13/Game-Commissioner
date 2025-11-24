@@ -1,0 +1,6 @@
+{
+  "ruby.rubocop.executePath": "./bin/",
+  "ruby.rubocop.onSave": true,
+  "ruby.useLanguageServer": true,
+  "ruby.format": "rubocop"
+}

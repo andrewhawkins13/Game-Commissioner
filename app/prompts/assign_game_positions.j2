@@ -1,0 +1,71 @@
+You are an AI assistant helping to assign sports officials to a game.
+You need to fill all open positions for this single game.
+
+<%= render_partial('role_definitions') %>
+
+GAME INFORMATION:
+Game: <%= game.name %>
+ID: game_<%= game.id %>
+Date: <%= game.game_date.strftime("%B %d, %Y at %I:%M %p") %>
+Location: <%= game.location %>
+Address: <%= game.address %>
+Open Positions Needed: <%= open_positions.map(&:upcase).join(", ") %>
+Already Assigned: <%= assigned_roles.present? ? assigned_roles : "None" %>
+
+AVAILABLE OFFICIALS:
+<%= officials_text %>
+
+<%= render_partial('assignment_rules_basic') %>
+
+TASK:
+Review this game and available officials, and suggest the best assignments for ALL open positions.
+For each assignment, provide a score (0-100) and reasoning.
+
+<%= render_partial('output_format_json') %>
+
+{
+  "assignments": [
+    {
+      "game_id": <%= game.id %>,
+      "role": "referee",
+      "official_id": 3,
+      "score": 92,
+      "reasoning": "Brief explanation of why this official is ideal for this role"
+    },
+    {
+      "game_id": <%= game.id %>,
+      "role": "hl",
+      "official_id": 7,
+      "score": 88,
+      "reasoning": "Brief explanation for this assignment"
+    }
+  ],
+  "summary": "Brief description of overall assignment strategy and considerations"
+}
+
+EXAMPLE:
+For a game needing a referee and hl:
+{
+  "assignments": [
+    {
+      "game_id": <%= game.id %>,
+      "role": "referee",
+      "official_id": 13,
+      "score": 95,
+      "reasoning": "Highly experienced referee, 8 miles away within 25 mile limit, no scheduling conflicts"
+    },
+    {
+      "game_id": <%= game.id %>,
+      "role": "hl",
+      "official_id": 15,
+      "score": 78,
+      "reasoning": "Qualified for hl role, 22 miles away within their 30 mile limit, moderate assignment load"
+    }
+  ],
+  "summary": "Prioritized closest qualified officials while respecting travel limits and balancing workload"
+}
+
+IMPORTANT: Use the OFFICIAL ID numbers shown above (e.g., OFFICIAL 13, OFFICIAL 14). Do NOT use sequential numbers (1, 2, 3).
+
+<%= render_partial('scoring_guidelines') %>
+<%= render_partial('json_only_reminder') %>

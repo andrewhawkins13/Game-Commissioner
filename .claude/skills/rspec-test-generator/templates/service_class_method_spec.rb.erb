@@ -1,0 +1,73 @@
+require "rails_helper"
+
+RSpec.describe <%= full_class_name %> do
+  <% class_methods.each do |method| %>
+  describe ".<%= method[:name] %>" do
+    <% method[:parameters].each do |param| %>
+    let(:<%= param[:name] %>) do
+      <% if param[:type] == :double %>
+      double("<%= param[:class_name] %>",
+        <%= param[:attributes].map { |k, v| "#{k}: #{v.inspect}" }.join(",\n        ") %>
+      )
+      <% elsif param[:type] == :relation %>
+      double("ActiveRecord::Relation")
+      <% else %>
+      <%= param[:default_value] %>
+      <% end %>
+    end
+    <% end %>
+
+    <% if method[:has_before_setup] %>
+    before do
+      <% method[:before_stubs].each do |stub| %>
+      <%= stub %>
+      <% end %>
+    end
+    <% end %>
+
+    <% method[:contexts].each do |context| %>
+    context "<%= context[:description] %>" do
+      <% if context[:additional_setup] %>
+      before do
+        <%= context[:additional_setup] %>
+      end
+      <% end %>
+
+      it "<%= context[:expectation] %>" do
+        result = described_class.<%= method[:name] %>(<%= method[:parameters].map { |p| p[:name] }.join(", ") %>)
+
+        <% context[:expectations].each do |expectation| %>
+        <%= expectation %>
+        <% end %>
+      end
+    end
+    <% end %>
+
+    <% if method[:has_edge_cases] %>
+    context "with edge cases" do
+      it "handles empty input gracefully" do
+        result = described_class.<%= method[:name] %>(<%= method[:edge_case_params] %>)
+        expect(result).to <%= method[:edge_case_expectation] %>
+      end
+    end
+    <% end %>
+
+    <% if method[:has_error_cases] %>
+    context "when errors occur" do
+      <% method[:error_cases].each do |error_case| %>
+      context "<%= error_case[:scenario] %>" do
+        before do
+          <%= error_case[:setup] %>
+        end
+
+        it "<%= error_case[:expectation] %>" do
+          <%= error_case[:test_code] %>
+        end
+      end
+      <% end %>
+    end
+    <% end %>
+  end
+
+  <% end %>
+end

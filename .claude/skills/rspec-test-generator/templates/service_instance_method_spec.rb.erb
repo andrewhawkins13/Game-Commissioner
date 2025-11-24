@@ -1,0 +1,107 @@
+require "rails_helper"
+
+RSpec.describe <%= full_class_name %> do
+  <% initialize_params.each do |param| %>
+  let(:<%= param[:name] %>) { <%= param[:default_value].inspect %> }
+  <% end %>
+  let(:service) { described_class.new(<%= initialize_params.map { |p| "#{p[:name]}: #{p[:name]}" }.join(", ") %>) }
+
+  describe "#initialize" do
+    it "initializes with default parameters" do
+      expect { described_class.new }.not_to raise_error
+    end
+
+    <% initialize_params.each do |param| %>
+    it "initializes with custom <%= param[:name] %>" do
+      custom_service = described_class.new(<%= param[:name] %>: <%= param[:custom_value].inspect %>)
+      expect(custom_service.instance_variable_get(:@<%= param[:name] %>)).to eq(<%= param[:custom_value].inspect %>)
+    end
+    <% end %>
+  end
+
+  <% instance_methods.each do |method| %>
+  describe "#<%= method[:name] %>" do
+    <% method[:parameters].each do |param| %>
+    let(:<%= param[:name] %>) do
+      <% if param[:type] == :double %>
+      double("<%= param[:class_name] %>",
+        <%= param[:attributes].map { |k, v| "#{k}: #{v.inspect}" }.join(",\n        ") %>
+      )
+      <% elsif param[:type] == :string %>
+      <%= param[:default_value].inspect %>
+      <% else %>
+      <%= param[:default_value] %>
+      <% end %>
+    end
+    <% end %>
+
+    <% if method[:has_webmock] %>
+    before do
+      stub_request(:<%= method[:http_method] %>, "<%= method[:url] %>")
+        .with(
+          body: <%= method[:request_body] %>,
+          headers: <%= method[:request_headers] %>
+        )
+        .to_return(
+          status: <%= method[:response_status] %>,
+          body: <%= method[:response_body] %>,
+          headers: { "Content-Type" => "application/json" }
+        )
+    end
+    <% end %>
+
+    <% if method[:has_stubs] %>
+    before do
+      <% method[:stubs].each do |stub| %>
+      <%= stub %>
+      <% end %>
+    end
+    <% end %>
+
+    <% method[:contexts].each do |context| %>
+    context "<%= context[:description] %>" do
+      <% if context[:additional_setup] %>
+      before do
+        <%= context[:additional_setup] %>
+      end
+      <% end %>
+
+      it "<%= context[:expectation] %>" do
+        result = service.<%= method[:name] %>(<%= method[:parameters].map { |p| p[:name] }.join(", ") %>)
+
+        <% context[:expectations].each do |expectation| %>
+        <%= expectation %>
+        <% end %>
+      end
+    end
+    <% end %>
+
+    <% if method[:has_error_handling] %>
+    context "when errors occur" do
+      <% method[:error_cases].each do |error_case| %>
+      context "<%= error_case[:scenario] %>" do
+        before do
+          <%= error_case[:setup] %>
+        end
+
+        it "<%= error_case[:expectation] %>" do
+          <%= error_case[:test_code] %>
+        end
+      end
+      <% end %>
+    end
+    <% end %>
+
+    <% if method[:has_edge_cases] %>
+    context "with edge cases" do
+      <% method[:edge_cases].each do |edge_case| %>
+      it "<%= edge_case[:description] %>" do
+        <%= edge_case[:test_code] %>
+      end
+      <% end %>
+    end
+    <% end %>
+  end
+
+  <% end %>
+end

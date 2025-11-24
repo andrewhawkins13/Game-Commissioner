@@ -1,0 +1,86 @@
+<div class="px-6 py-4 border-b border-gray-200">
+  <h2 class="text-lg font-semibold text-gray-900">All Attempts</h2>
+</div>
+
+<% if attempts.any? %>
+  <div class="divide-y divide-gray-200">
+    <% attempts.each do |attempt| %>
+      <div class="px-6 py-4 hover:bg-gray-50 transition-colors">
+        <div class="flex items-center justify-between">
+          <div class="flex-1">
+            <div class="flex items-center gap-4 mb-2">
+              <%= link_to assignment_attempt_path(attempt), class: "text-lg font-semibold text-blue-600 hover:text-blue-700" do %>
+                <%= attempt.ollama_model %>
+              <% end %>
+
+              <!-- Status Badge -->
+              <% if attempt.status == "completed" %>
+                <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Completed</span>
+              <% elsif attempt.status == "processing" %>
+                <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded js-poll-target">Processing</span>
+              <% elsif attempt.status == "failed" %>
+                <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded">Failed</span>
+              <% else %>
+                <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">Pending</span>
+              <% end %>
+
+              <!-- Evaluation Badge -->
+              <% if attempt.evaluated? %>
+                <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">⚖️ Evaluated</span>
+              <% end %>
+            </div>
+
+            <div class="text-sm text-gray-600">
+              <%= time_tag attempt.started_at, attempt.started_at.strftime("%B %d, %Y at %I:%M %p"), data: { controller: "local-time" } %>
+              <% if attempt.completed_at %>
+                · Duration: <%= attempt.duration_seconds %>s
+              <% end %>
+            </div>
+
+            <!-- Error Message (only show for failed attempts) -->
+            <% if attempt.error_message.present? && attempt.status == "failed" %>
+              <div class="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                <strong>Error:</strong> <%= truncate(attempt.error_message, length: 150) %>
+              </div>
+            <% end %>
+
+            <!-- Metrics Grid -->
+            <div class="grid grid-cols-3 gap-4 mt-3">
+              <div>
+                <div class="text-xs text-gray-500">Fill Rate</div>
+                <div class="text-sm font-semibold <%= (attempt.success_rate || 0) >= 70 ? 'text-green-600' : 'text-amber-600' %>">
+                  <%= number_to_percentage(attempt.success_rate || 0, precision: 1) %>
+                </div>
+              </div>
+              <div>
+                <div class="text-xs text-gray-500">Assigned</div>
+                <div class="text-sm font-semibold text-gray-900">
+                  <%= attempt.assignments_made || 0 %>/<%= attempt.total_positions || 0 %>
+                </div>
+              </div>
+              <div>
+                <div class="text-xs text-gray-500">Violations</div>
+                <div class="text-sm text-gray-900">
+                  <% if attempt.assignment_evaluation.present? %>
+                    <span class="font-semibold"><%= attempt.assignment_evaluation.total_violations %></span>
+                  <% else %>
+                    <span class="font-semibold text-gray-400">-</span>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ml-4">
+            <%= link_to "View Details →", assignment_attempt_path(attempt), class: "text-blue-600 hover:text-blue-700 font-medium text-sm" %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <div class="px-6 py-12 text-center">
+    <p class="text-gray-500 text-lg mb-2">No assignment attempts yet</p>
+    <p class="text-gray-400 text-sm">Click "Assign Open Games" to create your first AI-powered assignment attempt</p>
+  </div>
+<% end %>

@@ -1,0 +1,163 @@
+require "rails_helper"
+
+RSpec.describe <%= class_name %>, type: :model do
+  <% if has_geocoding %>
+  before do
+    Geocoder.configure(lookup: :test)
+    Geocoder::Lookup::Test.add_stub(
+      "<%= geocoder_address %>",
+      [{ "latitude" => 40.7128, "longitude" => -74.0060 }]
+    )
+  end
+
+  after do
+    Geocoder::Lookup::Test.reset
+  end
+  <% end %>
+
+  describe "validations" do
+    let(:<%= model_name %>) do
+      <%= class_name %>.new(
+        <%= valid_attributes %>
+      )
+    end
+
+    it "is valid with valid attributes" do
+      expect(<%= model_name %>).to be_valid
+    end
+
+    <% validations.each do |validation| %>
+    context "<%= validation[:field] %>" do
+      <% if validation[:type] == :presence %>
+      it "is invalid without <%= validation[:field] %>" do
+        <%= model_name %>.<%= validation[:field] %> = nil
+        expect(<%= model_name %>).not_to be_valid
+        expect(<%= model_name %>.errors[:<%= validation[:field] %>]).to include("can't be blank")
+      end
+      <% end %>
+
+      <% if validation[:type] == :uniqueness %>
+      it "is invalid with duplicate <%= validation[:field] %>" do
+        <%= class_name %>.create!(<%= valid_attributes %>)
+        duplicate = <%= class_name %>.new(<%= valid_attributes %>)
+        expect(duplicate).not_to be_valid
+        expect(duplicate.errors[:<%= validation[:field] %>]).to include("has already been taken")
+      end
+
+      context "database constraint" do
+        it "database index prevents duplicate <%= validation[:field] %>" do
+          <%= class_name %>.create!(<%= valid_attributes %>)
+          duplicate = <%= class_name %>.new(<%= valid_attributes %>)
+          expect {
+            duplicate.save(validate: false)
+          }.to raise_error(ActiveRecord::RecordNotUnique)
+        end
+      end
+      <% end %>
+
+      <% if validation[:type] == :format %>
+      it "is invalid with incorrectly formatted <%= validation[:field] %>" do
+        <%= model_name %>.<%= validation[:field] %> = "invalid_format"
+        expect(<%= model_name %>).not_to be_valid
+        expect(<%= model_name %>.errors[:<%= validation[:field] %>]).to include("<%= validation[:message] || 'is invalid' %>")
+      end
+      <% end %>
+
+      <% if validation[:type] == :numericality %>
+      it "is invalid with non-numeric <%= validation[:field] %>" do
+        <%= model_name %>.<%= validation[:field] %> = "not a number"
+        expect(<%= model_name %>).not_to be_valid
+        expect(<%= model_name %>.errors[:<%= validation[:field] %>]).to include("is not a number")
+      end
+      <% end %>
+    end
+    <% end %>
+  end
+
+  <% if has_associations %>
+  describe "associations" do
+    <% belongs_to_associations.each do |assoc| %>
+    it "belongs to <%= assoc %>" do
+      expect(<%= class_name %>.reflect_on_association(:<%= assoc %>).macro).to eq(:belongs_to)
+    end
+    <% end %>
+
+    <% has_many_associations.each do |assoc| %>
+    it "has many <%= assoc %>" do
+      expect(<%= class_name %>.reflect_on_association(:<%= assoc %>).macro).to eq(:has_many)
+    end
+    <% end %>
+
+    <% has_one_associations.each do |assoc| %>
+    it "has one <%= assoc %>" do
+      expect(<%= class_name %>.reflect_on_association(:<%= assoc %>).macro).to eq(:has_one)
+    end
+    <% end %>
+  end
+  <% end %>
+
+  <% if has_enums %>
+  describe "enums" do
+    <% enums.each do |enum_name, enum_values| %>
+    it "defines <%= enum_name %> enum" do
+      expect(<%= class_name %>.defined_enums["<%= enum_name %>"]).to eq({
+        <%= enum_values.map { |k, v| "\"#{k}\" => #{v}" }.join(",\n        ") %>
+      })
+    end
+    <% end %>
+  end
+  <% end %>
+
+  <% if has_scopes %>
+  describe "scopes" do
+    <% scopes.each do |scope| %>
+    describe ".<%= scope[:name] %>" do
+      it "<%= scope[:description] %>" do
+        # TODO: Implement scope test
+        <%= scope[:test_code] %>
+      end
+    end
+    <% end %>
+  end
+  <% end %>
+
+  <% if has_instance_methods %>
+  <% instance_methods.each do |method| %>
+  describe "#<%= method[:name] %>" do
+    <% method[:contexts].each do |context| %>
+    context "<%= context[:description] %>" do
+      <% if context[:setup] %>
+      before do
+        <%= context[:setup] %>
+      end
+      <% end %>
+
+      it "<%= context[:expectation] %>" do
+        <%= context[:test_code] %>
+      end
+    end
+    <% end %>
+  end
+  <% end %>
+  <% end %>
+
+  <% if has_class_methods %>
+  <% class_methods.each do |method| %>
+  describe ".<%= method[:name] %>" do
+    <% method[:contexts].each do |context| %>
+    context "<%= context[:description] %>" do
+      <% if context[:setup] %>
+      before do
+        <%= context[:setup] %>
+      end
+      <% end %>
+
+      it "<%= context[:expectation] %>" do
+        <%= context[:test_code] %>
+      end
+    end
+    <% end %>
+  end
+  <% end %>
+  <% end %>
+end

@@ -1,0 +1,224 @@
+require "rails_helper"
+
+RSpec.describe <%= controller_name %>, type: :controller do
+  <% if has_index %>
+  describe "GET #index" do
+    it "returns a successful response" do
+      get :index
+      expect(response).to be_successful
+    end
+
+    it "assigns @<%= resource_plural %>" do
+      <%= resource_plural %> = <%= resource_class %>.all
+      get :index
+      expect(assigns(:<%= resource_plural %>)).to eq(<%= resource_plural %>)
+    end
+
+    <% if index_has_params %>
+    context "with filter parameters" do
+      it "filters <%= resource_plural %> by <%= filter_param %>" do
+        get :index, params: { <%= filter_param %>: "<%= filter_value %>" }
+        expect(assigns(:<%= resource_plural %>)).to <%= filter_expectation %>
+      end
+    end
+    <% end %>
+  end
+  <% end %>
+
+  <% if has_show %>
+  describe "GET #show" do
+    let(:<%= resource_name %>) { <%= resource_class %>.create!(<%= valid_attributes %>) }
+
+    it "returns a successful response" do
+      get :show, params: { id: <%= resource_name %>.id }
+      expect(response).to be_successful
+    end
+
+    it "assigns @<%= resource_name %>" do
+      get :show, params: { id: <%= resource_name %>.id }
+      expect(assigns(:<%= resource_name %>)).to eq(<%= resource_name %>)
+    end
+  end
+  <% end %>
+
+  <% if has_new %>
+  describe "GET #new" do
+    it "returns a successful response" do
+      get :new
+      expect(response).to be_successful
+    end
+
+    it "assigns a new <%= resource_name %>" do
+      get :new
+      expect(assigns(:<%= resource_name %>)).to be_a_new(<%= resource_class %>)
+    end
+  end
+  <% end %>
+
+  <% if has_create %>
+  describe "POST #create" do
+    context "with valid parameters" do
+      let(:valid_attributes) do
+        {
+          <%= valid_attributes %>
+        }
+      end
+
+      it "creates a new <%= resource_name %>" do
+        expect {
+          post :create, params: { <%= resource_name %>: valid_attributes }
+        }.to change(<%= resource_class %>, :count).by(1)
+      end
+
+      it "redirects to the created <%= resource_name %>" do
+        post :create, params: { <%= resource_name %>: valid_attributes }
+        expect(response).to redirect_to(<%= redirect_path %>)
+      end
+
+      <% if has_flash_messages %>
+      it "sets a success flash message" do
+        post :create, params: { <%= resource_name %>: valid_attributes }
+        expect(flash[:notice]).to eq("<%= create_success_message %>")
+      end
+      <% end %>
+    end
+
+    context "with invalid parameters" do
+      let(:invalid_attributes) do
+        {
+          <%= invalid_attributes %>
+        }
+      end
+
+      it "does not create a new <%= resource_name %>" do
+        expect {
+          post :create, params: { <%= resource_name %>: invalid_attributes }
+        }.not_to change(<%= resource_class %>, :count)
+      end
+
+      it "renders the new template" do
+        post :create, params: { <%= resource_name %>: invalid_attributes }
+        expect(response).to render_template(:new)
+      end
+
+      <% if renders_422 %>
+      it "returns unprocessable entity status" do
+        post :create, params: { <%= resource_name %>: invalid_attributes }
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+      <% end %>
+    end
+  end
+  <% end %>
+
+  <% if has_edit %>
+  describe "GET #edit" do
+    let(:<%= resource_name %>) { <%= resource_class %>.create!(<%= valid_attributes %>) }
+
+    it "returns a successful response" do
+      get :edit, params: { id: <%= resource_name %>.id }
+      expect(response).to be_successful
+    end
+
+    it "assigns @<%= resource_name %>" do
+      get :edit, params: { id: <%= resource_name %>.id }
+      expect(assigns(:<%= resource_name %>)).to eq(<%= resource_name %>)
+    end
+  end
+  <% end %>
+
+  <% if has_update %>
+  describe "PATCH #update" do
+    let(:<%= resource_name %>) { <%= resource_class %>.create!(<%= valid_attributes %>) }
+
+    context "with valid parameters" do
+      let(:new_attributes) do
+        {
+          <%= updated_attributes %>
+        }
+      end
+
+      it "updates the <%= resource_name %>" do
+        patch :update, params: { id: <%= resource_name %>.id, <%= resource_name %>: new_attributes }
+        <%= resource_name %>.reload
+        <%= update_expectations.join("\n        ") %>
+      end
+
+      it "redirects to the <%= resource_name %>" do
+        patch :update, params: { id: <%= resource_name %>.id, <%= resource_name %>: new_attributes }
+        expect(response).to redirect_to(<%= redirect_path %>)
+      end
+
+      <% if has_flash_messages %>
+      it "sets a success flash message" do
+        patch :update, params: { id: <%= resource_name %>.id, <%= resource_name %>: new_attributes }
+        expect(flash[:notice]).to eq("<%= update_success_message %>")
+      end
+      <% end %>
+    end
+
+    context "with invalid parameters" do
+      let(:invalid_attributes) do
+        {
+          <%= invalid_attributes %>
+        }
+      end
+
+      it "does not update the <%= resource_name %>" do
+        original_value = <%= resource_name %>.<%= key_attribute %>
+        patch :update, params: { id: <%= resource_name %>.id, <%= resource_name %>: invalid_attributes }
+        <%= resource_name %>.reload
+        expect(<%= resource_name %>.<%= key_attribute %>).to eq(original_value)
+      end
+
+      it "renders the edit template" do
+        patch :update, params: { id: <%= resource_name %>.id, <%= resource_name %>: invalid_attributes }
+        expect(response).to render_template(:edit)
+      end
+    end
+  end
+  <% end %>
+
+  <% if has_destroy %>
+  describe "DELETE #destroy" do
+    let!(:<%= resource_name %>) { <%= resource_class %>.create!(<%= valid_attributes %>) }
+
+    it "destroys the <%= resource_name %>" do
+      expect {
+        delete :destroy, params: { id: <%= resource_name %>.id }
+      }.to change(<%= resource_class %>, :count).by(-1)
+    end
+
+    it "redirects to the <%= resource_plural %> list" do
+      delete :destroy, params: { id: <%= resource_name %>.id }
+      expect(response).to redirect_to(<%= index_path %>)
+    end
+
+    <% if has_flash_messages %>
+    it "sets a success flash message" do
+      delete :destroy, params: { id: <%= resource_name %>.id }
+      expect(flash[:notice]).to eq("<%= destroy_success_message %>")
+    end
+    <% end %>
+  end
+  <% end %>
+
+  <% if has_custom_actions %>
+  <% custom_actions.each do |action| %>
+  describe "<%= action[:http_method].upcase %> #<%= action[:name] %>" do
+    <% action[:contexts].each do |context| %>
+    context "<%= context[:description] %>" do
+      <% if context[:setup] %>
+      let(:<%= resource_name %>) { <%= context[:setup] %> }
+      <% end %>
+
+      it "<%= context[:expectation] %>" do
+        <%= action[:http_method] %> :<%= action[:name] %>, params: { <%= context[:params] %> }
+        <%= context[:test_code] %>
+      end
+    end
+    <% end %>
+  end
+  <% end %>
+  <% end %>
+end
